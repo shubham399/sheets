@@ -70,23 +70,6 @@ func newProgramModelWithInput(args []string, stdin io.Reader) (model, error) {
 	return m, nil
 }
 
-func queryCellValue(path, ref string) (string, error) {
-	records, err := queryCellValues(path, ref)
-	if err != nil {
-		return "", err
-	}
-	return records[0][0], nil
-}
-
-func queryCellValues(path, ref string) ([][]string, error) {
-	m := newModel()
-	if err := m.loadCSVFile(path); err != nil {
-		return nil, err
-	}
-
-	return m.queryCellValues(ref)
-}
-
 func (m model) queryCellValues(ref string) ([][]string, error) {
 	target, ok := parseCellRangeRef(ref)
 	if !ok {
@@ -169,19 +152,6 @@ func parseCellAssignment(input string) (cellRange, string, bool, error) {
 	}
 
 	return ref, input[index+1:], true, nil
-}
-
-func writeCellValue(path, input string) error {
-	m, err := newProgramModel([]string{path})
-	if err != nil {
-		return err
-	}
-
-	if err := m.applyCellAssignment(input); err != nil {
-		return err
-	}
-
-	return m.writeCurrentFile()
 }
 
 func (m *model) applyCellAssignment(input string) error {
@@ -303,10 +273,6 @@ func writeQueryRecords(stdout io.Writer, records [][][]string) error {
 	for _, block := range records {
 		writer := csv.NewWriter(stdout)
 		if err := writer.WriteAll(block); err != nil {
-			return err
-		}
-		writer.Flush()
-		if err := writer.Error(); err != nil {
 			return err
 		}
 	}

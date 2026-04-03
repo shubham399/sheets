@@ -87,6 +87,20 @@ func (m *model) openRowAboveWithKeys(keys []tea.KeyMsg) tea.Cmd {
 	return m.enterInsertModeWithKeys(keys)
 }
 
+func (m *model) openColAfterWithKeys(keys []tea.KeyMsg) tea.Cmd {
+	insertCol := min(m.selectedCol+1, totalCols-1)
+	m.insertColAt(insertCol)
+	m.selectedCol = clamp(insertCol, 0, totalCols-1)
+	m.ensureVisible()
+	return m.enterInsertModeWithKeys(keys)
+}
+
+func (m *model) openColBeforeWithKeys(keys []tea.KeyMsg) tea.Cmd {
+	m.insertColAt(m.selectedCol)
+	m.ensureVisible()
+	return m.enterInsertModeWithKeys(keys)
+}
+
 func (m *model) enterInsertModeWithKeys(keys []tea.KeyMsg) tea.Cmd {
 	m.mode = insertMode
 	m.clearCount()

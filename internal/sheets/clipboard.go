@@ -279,6 +279,30 @@ func (m *model) pasteIntoCurrentCell(count int) bool {
 	return true
 }
 
+func (m *model) insertColAt(insertCol int) {
+	insertCol = clamp(insertCol, 0, totalCols)
+	if insertCol >= totalCols {
+		return
+	}
+	m.pushUndoState()
+
+	shifted := make(map[cellKey]string, len(m.cells))
+	for key, value := range m.cells {
+		newValue := rewriteFormulaForColInsert(value, insertCol)
+		if key.col < insertCol {
+			shifted[key] = newValue
+			continue
+		}
+		newCol := key.col + 1
+		if newCol >= totalCols {
+			continue
+		}
+		shifted[cellKey{row: key.row, col: newCol}] = newValue
+	}
+
+	m.cells = shifted
+}
+
 func (m *model) insertRowAt(insertRow int) {
 	if m.rowCount >= maxRows {
 		return

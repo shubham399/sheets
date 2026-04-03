@@ -260,12 +260,7 @@ func (m model) csvRecords() [][]string {
 }
 
 func (m model) writeCSV(writer *csv.Writer) error {
-	if err := writer.WriteAll(m.csvRecords()); err != nil {
-		return err
-	}
-
-	writer.Flush()
-	return writer.Error()
+	return writer.WriteAll(m.csvRecords())
 }
 
 func (m model) writeCSVFile(path string) error {

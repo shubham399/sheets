@@ -195,6 +195,61 @@ func rewriteCellRefToken(token string, deltaRow, deltaCol int) (string, bool) {
 	return cellRef(row, col), true
 }
 
+func rewriteFormulaForColInsert(value string, insertCol int) string {
+	if !isFormulaCell(value) {
+		return value
+	}
+
+	body := value[1:]
+	var b strings.Builder
+	b.WriteByte('=')
+	for i := 0; i < len(body); {
+		if !isLetter(body[i]) {
+			b.WriteByte(body[i])
+			i++
+			continue
+		}
+
+		start := i
+		for i < len(body) && isLetter(body[i]) {
+			i++
+		}
+		digitStart := i
+		for i < len(body) && isDigit(body[i]) {
+			i++
+		}
+
+		token := body[start:i]
+		if digitStart > start && i > digitStart {
+			if rewritten, ok := rewriteCellRefForColInsert(token, insertCol); ok {
+				b.WriteString(rewritten)
+				continue
+			}
+		}
+
+		b.WriteString(token)
+	}
+
+	return b.String()
+}
+
+func rewriteCellRefForColInsert(token string, insertCol int) (string, bool) {
+	ref, ok := parseCellRef(token)
+	if !ok {
+		return "", false
+	}
+
+	col := ref.col
+	if col >= insertCol {
+		col++
+	}
+	if col < 0 || col >= totalCols {
+		return "#REF!", true
+	}
+
+	return cellRef(ref.row, col), true
+}
+
 func isLetter(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }

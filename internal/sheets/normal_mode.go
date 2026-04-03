@@ -129,6 +129,10 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.changeCurrentCell(append(m.commandPrefixKeys(), msg))
 		case "d":
 			m.startDeleteRowCommand()
+		case "a":
+			return m, m.openColAfterWithKeys(append(m.commandPrefixKeys(), msg))
+		case "A":
+			return m, m.openColBeforeWithKeys(append(m.commandPrefixKeys(), msg))
 		case "o":
 			return m, m.openRowBelowWithKeys(append(m.commandPrefixKeys(), msg))
 		case "O":

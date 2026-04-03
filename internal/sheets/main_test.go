@@ -269,9 +269,9 @@ func TestRunAssignsFormulaCellInCSV(t *testing.T) {
 	}
 
 	assertCellValue(t, loaded, 0, 2, "=A1+B1")
-	if got, err := queryCellValue(path, "C1"); err != nil {
+	if records, err := loaded.queryCellValues("C1"); err != nil {
 		t.Fatalf("expected assigned formula cell to be queryable, got %v", err)
-	} else if want := "3"; got != want {
+	} else if got, want := records[0][0], "3"; got != want {
 		t.Fatalf("expected queried formula value %q, got %q", want, got)
 	}
 }
@@ -311,26 +311,18 @@ func TestRunPrintsMultipleSingleCellQueriesWithoutBlankLines(t *testing.T) {
 }
 
 func TestRunPrintsHelp(t *testing.T) {
-	var stdout bytes.Buffer
+	for _, flag := range []string{"-h", "--help"} {
+		t.Run(flag, func(t *testing.T) {
+			var stdout bytes.Buffer
 
-	if err := run([]string{"--help"}, &stdout); err != nil {
-		t.Fatalf("expected help output to succeed, got %v", err)
-	}
+			if err := run([]string{flag}, &stdout); err != nil {
+				t.Fatalf("expected help output to succeed, got %v", err)
+			}
 
-	if got, want := stdout.String(), helpText; got != want {
-		t.Fatalf("expected help output %q, got %q", want, got)
-	}
-}
-
-func TestRunPrintsShortHelp(t *testing.T) {
-	var stdout bytes.Buffer
-
-	if err := run([]string{"-h"}, &stdout); err != nil {
-		t.Fatalf("expected short help output to succeed, got %v", err)
-	}
-
-	if got, want := stdout.String(), helpText; got != want {
-		t.Fatalf("expected help output %q, got %q", want, got)
+			if got, want := stdout.String(), helpText; got != want {
+				t.Fatalf("expected help output %q, got %q", want, got)
+			}
+		})
 	}
 }
 
@@ -345,34 +337,17 @@ func TestRunPrintsVersion(t *testing.T) {
 		readBuildInfo = originalReadBuildInfo
 	})
 
-	var stdout bytes.Buffer
-	if err := run([]string{"--version"}, &stdout); err != nil {
-		t.Fatalf("expected version output to succeed, got %v", err)
-	}
+	for _, flag := range []string{"-v", "--version"} {
+		t.Run(flag, func(t *testing.T) {
+			var stdout bytes.Buffer
+			if err := run([]string{flag}, &stdout); err != nil {
+				t.Fatalf("expected version output to succeed, got %v", err)
+			}
 
-	if got, want := stdout.String(), "sheets v1.2.3\n"; got != want {
-		t.Fatalf("expected version output %q, got %q", want, got)
-	}
-}
-
-func TestRunPrintsShortVersion(t *testing.T) {
-	originalReadBuildInfo := readBuildInfo
-	readBuildInfo = func() (*debug.BuildInfo, bool) {
-		return &debug.BuildInfo{
-			Main: debug.Module{Version: "v1.2.3"},
-		}, true
-	}
-	t.Cleanup(func() {
-		readBuildInfo = originalReadBuildInfo
-	})
-
-	var stdout bytes.Buffer
-	if err := run([]string{"-v"}, &stdout); err != nil {
-		t.Fatalf("expected short version output to succeed, got %v", err)
-	}
-
-	if got, want := stdout.String(), "sheets v1.2.3\n"; got != want {
-		t.Fatalf("expected version output %q, got %q", want, got)
+			if got, want := stdout.String(), "sheets v1.2.3\n"; got != want {
+				t.Fatalf("expected version output %q, got %q", want, got)
+			}
+		})
 	}
 }
 
