@@ -59,12 +59,62 @@ func TestLoadCSVPopulatesSheetAndPreservesFormulas(t *testing.T) {
 		t.Fatalf("expected CSV read to succeed, got %v", err)
 	}
 
-	m.loadCSV(records)
+	if err := m.loadCSV(records); err != nil {
+		t.Fatalf("expected CSV load to succeed, got %v", err)
+	}
 
 	assertCellValue(t, m, 0, 0, "hello,world")
 	assertCellValue(t, m, 0, 2, "=B1+1")
 	assertDisplayValue(t, m, 0, 2, "=2")
 	assertSelection(t, m, 0, 0)
+}
+
+func TestLoadCSVExpandsRowCountForLargeFiles(t *testing.T) {
+	m := newModel()
+	records := make([][]string, defaultRows+1)
+	records[0] = []string{"top"}
+	records[defaultRows] = []string{"bottom"}
+
+	if err := m.loadCSV(records); err != nil {
+		t.Fatalf("expected CSV load to succeed, got %v", err)
+	}
+
+	if got, want := m.rowCount, defaultRows+1; got != want {
+		t.Fatalf("expected row count %d, got %d", want, got)
+	}
+	assertCellValue(t, m, 0, 0, "top")
+	assertCellValue(t, m, defaultRows, 0, "bottom")
+}
+
+func TestLoadCSVExpandsRowLabelWidthForFiveDigitRows(t *testing.T) {
+	m := newModel()
+	records := make([][]string, 10000)
+
+	if err := m.loadCSV(records); err != nil {
+		t.Fatalf("expected CSV load to succeed, got %v", err)
+	}
+
+	if got, want := m.rowLabelWidth, 5; got != want {
+		t.Fatalf("expected row label width %d, got %d", want, got)
+	}
+	if line := m.renderContentLine(9999, []int{0}); !strings.Contains(line, "10000") {
+		t.Fatalf("expected rendered row label to include 10000, got %q", line)
+	}
+}
+
+func TestLoadCSVRejectsFilesAboveMaxRows(t *testing.T) {
+	m := newModel()
+
+	err := m.loadCSV(make([][]string, maxRows+1))
+	if err == nil {
+		t.Fatal("expected oversized CSV load to fail")
+	}
+	if want := "maximum supported is 50000"; !strings.Contains(err.Error(), want) {
+		t.Fatalf("expected error containing %q, got %q", want, err)
+	}
+	if got, want := m.rowCount, defaultRows; got != want {
+		t.Fatalf("expected failed load to preserve row count %d, got %d", want, got)
+	}
 }
 
 func TestNewProgramModelLoadsCSVFromFirstArg(t *testing.T) {
@@ -602,8 +652,10 @@ func TestParseCellRef(t *testing.T) {
 		{name: "single letter column", ref: "A1", want: cellKey{row: 0, col: 0}, wantOK: true},
 		{name: "double letter column", ref: "AA10", want: cellKey{row: 9, col: 26}, wantOK: true},
 		{name: "lowercase ref", ref: "az1", want: cellKey{row: 0, col: 51}, wantOK: true},
+		{name: "max row", ref: "A50000", want: cellKey{row: maxRows - 1, col: 0}, wantOK: true},
 		{name: "out of range column", ref: "BA1", wantOK: false},
 		{name: "row zero invalid", ref: "A0", wantOK: false},
+		{name: "row above max", ref: "A50001", wantOK: false},
 		{name: "missing row", ref: "A", wantOK: false},
 		{name: "missing column", ref: "10", wantOK: false},
 	}

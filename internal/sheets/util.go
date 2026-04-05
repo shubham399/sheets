@@ -142,6 +142,10 @@ func isColumnLabelPrefix(prefix string) bool {
 	return false
 }
 
+func rowLabelWidthForCount(rowCount int) int {
+	return max(4, len(strconv.Itoa(max(1, rowCount))))
+}
+
 func rewriteFormulaReferences(value string, deltaRow, deltaCol int) string {
 	if !isFormulaCell(value) || (deltaRow == 0 && deltaCol == 0) {
 		return value

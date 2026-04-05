@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	defaultRows = 99
-	maxRows     = 999
+	defaultRows = 999
+	maxRows     = 50000
 	totalCols   = 52
 )
 

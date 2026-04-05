@@ -185,6 +185,7 @@ func (m *model) deleteRows(startRow, count int) {
 	}
 	m.cells = shifted
 	m.rowCount -= count
+	m.syncRowLabelWidth()
 	m.selectedRow = clamp(m.selectedRow, 0, m.rowCount-1)
 	m.selectRow = clamp(m.selectRow, 0, m.rowCount-1)
 }
@@ -321,6 +322,7 @@ func (m *model) insertRowAt(insertRow int) {
 
 	m.cells = shifted
 	m.rowCount++
+	m.syncRowLabelWidth()
 }
 
 func (m *model) deleteRowAt(deleteRow int) {
@@ -345,5 +347,6 @@ func (m *model) deleteRowAt(deleteRow int) {
 
 	m.cells = shifted
 	m.rowCount--
+	m.syncRowLabelWidth()
 	m.selectedRow = clamp(m.selectedRow, 0, m.rowCount-1)
 }

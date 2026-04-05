@@ -2,6 +2,7 @@ package sheets
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"maps"
 	"os"
@@ -40,7 +41,7 @@ func newModel() model {
 		selectRow:     0,
 		selectCol:     0,
 		cellWidth:     12,
-		rowLabelWidth: 4,
+		rowLabelWidth: rowLabelWidthForCount(defaultRows),
 		cells:         make(map[cellKey]string),
 		registers:     make(map[rune]clipboard),
 		marks:         make(map[rune]cellKey),
@@ -151,7 +152,9 @@ func (m *model) loadCSVFile(path string) error {
 		return err
 	}
 
-	m.loadCSV(records)
+	if err := m.loadCSV(records); err != nil {
+		return err
+	}
 	m.currentFilePath = path
 	return nil
 }
@@ -162,15 +165,21 @@ func (m *model) loadCSVReader(reader io.Reader) error {
 		return err
 	}
 
-	m.loadCSV(records)
+	if err := m.loadCSV(records); err != nil {
+		return err
+	}
 	m.currentFilePath = ""
 	return nil
 }
 
 func (m *model) loadCSV(records [][]string) error {
+	if len(records) > maxRows {
+		return fmt.Errorf("file has %d rows; maximum supported is %d", len(records), maxRows)
+	}
 
 	m.cells = make(map[cellKey]string)
 	m.rowCount = defaultRows
+	m.syncRowLabelWidth()
 	m.undoStack = nil
 	m.redoStack = nil
 	m.promptKind = noPrompt
@@ -216,7 +225,8 @@ func (m *model) loadCSV(records [][]string) error {
 		}
 	}
 	if len(records) > m.rowCount {
-		m.rowCount = min(len(records), maxRows)
+		m.rowCount = len(records)
+		m.syncRowLabelWidth()
 	}
 
 	return nil
@@ -448,6 +458,7 @@ func (m model) snapshotUndoState() undoState {
 func (m *model) restoreUndoState(state undoState) {
 	m.cells = cloneCells(state.cells)
 	m.rowCount = max(1, state.rowCount)
+	m.syncRowLabelWidth()
 	m.selectedRow = state.selectedRow
 	m.selectedCol = state.selectedCol
 	m.selectRow = state.selectRow
@@ -470,6 +481,10 @@ func (m *model) setCellValue(row, col int, value string) {
 	}
 
 	m.cells[key] = value
+}
+
+func (m *model) syncRowLabelWidth() {
+	m.rowLabelWidth = rowLabelWidthForCount(m.rowCount)
 }
 
 func cloneCells(cells map[cellKey]string) map[cellKey]string {
